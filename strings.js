@@ -177,7 +177,8 @@ window.STRINGS={
     "assistMedium": "中",
     "assistStrong": "強",
     "autoSpray": "オート噴射",
-    "autoSprayHint": "ゴキジェット専用。照準の中心が射程内のゴキブリ本体に合う間だけ噴射。残量を消費します。初期OFF。"
+    "autoSprayHint": "ゴキジェット専用。照準の中心が射程内のゴキブリ本体に合う間だけ噴射。残量を消費します。初期OFF。",
+    "feedbackUnavailable": "現在、受信先を設定中のため、FBの送信を停止しています。"
   },
   "en": {
     "copyGameUrl": "Copy game URL",
@@ -357,6 +358,7 @@ window.STRINGS={
     "assistMedium": "Medium",
     "assistStrong": "Strong",
     "autoSpray": "Auto-spray",
-    "autoSprayHint": "Spray only. Fires while the center crosshair hits a pest within range. Uses spray supply. Default OFF."
+    "autoSprayHint": "Spray only. Fires while the center crosshair hits a pest within range. Uses spray supply. Default OFF.",
+    "feedbackUnavailable": "Feedback submission is paused while the receiver is being configured."
   }
 };
