@@ -1,0 +1,4 @@
+export function validRecord(record){return !!record&&Number.isInteger(record.level)&&record.level>=1&&Number.isFinite(record.elapsed)&&record.elapsed>=0;}
+export function chooseRecord(previous,candidate){if(!validRecord(candidate))return validRecord(previous)?previous:null;if(!validRecord(previous)||candidate.level>previous.level||candidate.level===previous.level&&candidate.elapsed>previous.elapsed)return {level:candidate.level,elapsed:candidate.elapsed};return previous;}
+export function loadRecord(){try{const record=JSON.parse(localStorage.getItem('goki-jet/best-record'));return validRecord(record)?record:null;}catch{return null;}}
+export function saveRecord(previous,candidate){const best=chooseRecord(previous,candidate);try{if(best)localStorage.setItem('goki-jet/best-record',JSON.stringify(best));}catch{}return {best,newBest:best!==previous};}
