@@ -1,4 +1,5 @@
-import {canOccupy,STORE_NAVIGATION as NAVIGATION,CUSTOMER_ROUTES} from './market-world.js?v=0.2.0-auto1';
+import {stepLure} from './lure.js?v=0.3.0';
+import {canOccupy,STORE_NAVIGATION as NAVIGATION,CUSTOMER_ROUTES} from './market-world.js?v=0.3.0';
 const length=(a,b)=>Math.hypot(...a.map((v,i)=>v-b[i]));
 const mix=(a,b,f)=>a.map((v,i)=>v+(b[i]-v)*f);
 const cover=s=>s==='shelf';
@@ -42,6 +43,7 @@ function nextEdge(ai,node,player,random,graph){
 export function stepRoach(input,dt,context={},random=Math.random,graph=NAVIGATION){
  const ai={...input,moved:0},d=Math.max(0,Math.min(.05,dt)),player=context.player??[0,1.5,0];
  if(d===0)return ai;
+ if(context.lure)return stepLure(input,d,context.lure,graph,context.speedMultiplier??1);
  ai.age+=d;ai.timer-=d;ai.cooldown=Math.max(0,ai.cooldown-d);ai.threat=Math.max(0,ai.threat-d);ai.flightLeft=Math.max(0,ai.flightLeft-d);
  const current=sampleRoach(ai,graph),distance=length(current.position,player);
  ai.shelfTime=cover(current.surface)?(ai.shelfTime??0)+d:0;
@@ -79,8 +81,12 @@ export function stepRoach(input,dt,context={},random=Math.random,graph=NAVIGATIO
  return ai;
 }
 
-export function createCustomer(id){const route=CUSTOMER_ROUTES[id%CUSTOMER_ROUTES.length];return {id,x:route[0][0],z:route[0][1],yaw:0,next:1,wait:1+id*.4,alertUntil:0,awareness:new Map(),route};}
-export function stepCustomer(input,dt,random=Math.random){const c={...input};if(c.wait>0){c.wait=Math.max(0,c.wait-dt);return c;}const [x,z]=c.route[c.next],dx=x-c.x,dz=z-c.z,d=Math.hypot(dx,dz),step=Math.min(d,Math.min(.05,Math.max(0,dt))*(.72+c.id*.07));c.yaw=Math.atan2(-dx,-dz);if(d>.001){c.x+=dx/d*step;c.z+=dz/d*step;}if(d<=step+.01){c.next=(c.next+1)%c.route.length;if(random()<.35)c.wait=.6+random()*1.4;}return c;}
+export function createCustomer(id,random=Math.random,occupied=[]){
+ // Allocate shoppers by route length, so additional shoppers do not all enter the central aisle.
+ const routes=CUSTOMER_ROUTES.map(route=>{const length=route.reduce((sum,p,i)=>sum+Math.hypot(p[0]-route[(i+1)%route.length][0],p[1]-route[(i+1)%route.length][1]),0),count=occupied.filter(c=>c.route===route).length;return {route,score:(count+1)/length*(.9+random()*.2)};});routes.sort((a,b)=>a.score-b.score);const route=routes[0].route,direction=random()<.5?1:-1;
+ let best=null,bestClearance=-Infinity;for(let attempt=0;attempt<100;attempt++){const i=Math.floor(random()*route.length),f=random(),a=route[i],b=route[(i+1)%route.length],x=a[0]+(b[0]-a[0])*f,z=a[1]+(b[1]-a[1])*f;if(!canOccupy(x,0,z,1.65,.28))continue;const clearance=Math.min(Infinity,...occupied.map(o=>Math.hypot(x-o.x,z-o.z)));if(clearance>bestClearance){bestClearance=clearance;best={id,x,z,yaw:Math.atan2((a[0]-b[0])*direction,(a[1]-b[1])*direction),next:direction===1?(i+1)%route.length:i,direction,wait:random()*.8,alertUntil:0,awareness:new Map(),route,stuckTime:0};}if(clearance>1.6)return best;}if(best)return best;throw Error('No valid customer spawn');}
+
+export function stepCustomer(input,dt,random=Math.random){const c={...input};if(c.wait>0){c.wait=Math.max(0,c.wait-dt);return c;}const [x,z]=c.route[c.next],dx=x-c.x,dz=z-c.z,d=Math.hypot(dx,dz),step=Math.min(d,Math.min(.05,Math.max(0,dt))*(.72+c.id*.07));c.yaw=Math.atan2(-dx,-dz);if(d>.001){c.x+=dx/d*step;c.z+=dz/d*step;}if(d<=step+.01){c.next=(c.next+(c.direction??1)+c.route.length)%c.route.length;if(random()<.35)c.wait=.6+random()*1.4;}return c;}
 
 export function stepCustomers(inputs,dt,player,random=Math.random){
  const result=inputs.map(c=>({...c})),d=Math.min(.05,Math.max(0,dt));
@@ -93,7 +99,8 @@ export function stepCustomers(inputs,dt,player,random=Math.random){
   if(!target&&obstacles.some(o=>{const x=o.x-c.x,z=o.z-c.z,along=x*ux+z*uz;return along>-.1&&along<1.15&&Math.abs(x*uz-z*ux)<.58;})){
    for(const sign of [1,-1]){const x=c.x+ux*.6-uz*.75*sign,z=c.z+uz*.6+ux*.75*sign;if(canOccupy(x,0,z,1.65,.26)&&obstacles.every(o=>Math.hypot(x-o.x,z-o.z)>.48)){target=[x,z];break;}}
   }
-  const tx=target?target[0]-c.x:dx,tz=target?target[1]-c.z:dz,dist=Math.hypot(tx,tz),vx=tx/Math.max(.001,dist),vz=tz/Math.max(.001,dist),step=Math.min(dist,d*(.72+(c.id%4)*.07));
+  let tx=target?target[0]-c.x:dx,tz=target?target[1]-c.z:dz;
+  const dist=Math.hypot(tx,tz),vx=tx/Math.max(.001,dist),vz=tz/Math.max(.001,dist),step=Math.min(dist,d*(.72+(c.id%4)*.07));
   let moved=false;
   for(const angle of [0,.45,-.45,.9,-.9,1.4,-1.4]){const x=c.x+(vx*Math.cos(angle)-vz*Math.sin(angle))*step,z=c.z+(vx*Math.sin(angle)+vz*Math.cos(angle))*step;
    if(!canOccupy(x,0,z,1.65,.24))continue;
@@ -101,6 +108,9 @@ export function stepCustomers(inputs,dt,player,random=Math.random){
    result[i]={...n,x,z,yaw:Math.atan2(c.x-x,c.z-z),avoidTarget:target};moved=true;break;
   }
   if(!moved)result[i]={...c,avoidTarget:null};
+  const updated=result[i],progress=Math.hypot(updated.x-c.x,updated.z-c.z);updated.stuckTime=progress<step*.12?(c.stuckTime??0)+d:Math.max(0,(c.stuckTime??0)-d*.5);
+  if(updated.stuckTime>2.5){updated.direction=-(c.direction??1);updated.next=(c.next+updated.direction+c.route.length)%c.route.length;updated.avoidTarget=null;updated.wait=0;updated.stuckTime=0;}
+
  }
  return result;
 }
