@@ -27,3 +27,7 @@ Use the FB button in the header. Your message, optional contact, app name/versio
 ## License
 MIT; bundled Three.js attribution in [vendor/THREE-LICENSE.txt](vendor/THREE-LICENSE.txt). Sounds and title illustration were created for this game.
 
+
+Version0.2.0: start with0P. A repeatable10,000P purchase grants one Goki Trap. Select it with E and activate with left click to eliminate all live pests immediately, earning normal kill points and satisfaction. Customers are unaffected; normal pests still replenish, bonus pests do not. The three-note activation sound uses the weapon volume setting. Shop cards show price, effect, inventory and missing points.
+- Aim assist levels: None/Weak/Medium/Strong. Default Weak matches the previous behavior; Medium/Strong multiply correction and tracking by2/3 with the same target cone and visibility rules. Selection persists; legacy Off migrates to None. Trap activation uses the selected low three-note sample4.
+- Auto-spray (default OFF): with spray selected, fires only while the center ray hits a visible live pest body within range. World fixtures and customers block it. Uses normal supply and customer penalty rules. Other tools remain manual. The preference is stored locally.

@@ -1,4 +1,4 @@
-import {canOccupy,STORE_NAVIGATION as NAVIGATION,CUSTOMER_ROUTES} from './market-world.js?v=contrast23';
+import {canOccupy,STORE_NAVIGATION as NAVIGATION,CUSTOMER_ROUTES} from './market-world.js?v=0.2.0-auto1';
 const length=(a,b)=>Math.hypot(...a.map((v,i)=>v-b[i]));
 const mix=(a,b,f)=>a.map((v,i)=>v+(b[i]-v)*f);
 const cover=s=>s==='shelf';
